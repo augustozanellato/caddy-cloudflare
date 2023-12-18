@@ -1,6 +1,11 @@
-FROM caddy:builder-alpine AS builder
+FROM --platform=$BUILDPLATFORM caddy:builder-alpine AS builder
 
-RUN xcaddy build --with github.com/caddy-dns/cloudflare
+ARG TARGETOS
+ARG TARGETARCH
+
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg \
+    GOOS=$TARGETOS GOARCH=$TARGETARCH xcaddy build --with github.com/caddy-dns/cloudflare
 
 FROM caddy:alpine
 
