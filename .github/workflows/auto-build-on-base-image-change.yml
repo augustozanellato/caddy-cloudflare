@@ -26,9 +26,20 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Go Build Cache for Docker
+        uses: actions/cache@v3
+        with:
+          path: go-build-cache
+          key: ${{ runner.os }}-go-build-cache
+      - name: inject go-build-cache into docker
+        uses: reproducible-containers/buildkit-cache-dance@v2
+        with:
+          cache-source: go-build-cache
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
