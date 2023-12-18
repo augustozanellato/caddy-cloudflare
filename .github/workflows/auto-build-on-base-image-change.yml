@@ -1,4 +1,8 @@
 name: Auto Image Rebuild
+
+env:
+  REGISTRY: ghcr.io
+
 on:
   schedule:
     - cron: "0 3 * * 1"
@@ -8,36 +12,26 @@ jobs:
   build-latest:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
+      - uses: actions/checkout@v4
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build and push Regular Docker Image
-        uses: docker/build-push-action@v2.6.1
+          images: ${{ env.REGISTRY }}/${{ github.repository }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
         with:
-          context: "${{ github.workspace }}"
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
           push: true
-          tags: technoguyfication/caddy-cloudflare:latest
+          tags: ${{ env.REGISTRY }}/${{ github.repository }}:alpine
+          labels: ${{ steps.meta.outputs.labels }}
 
-  build-alpine:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build and push Alpine Docker Image
-        uses: docker/build-push-action@v2.6.1
-        with:
-          context: "${{ github.workspace }}"
-          push: true
-          tags: technoguyfication/caddy-cloudflare:alpine
-          file: "Dockerfile.alpine"
