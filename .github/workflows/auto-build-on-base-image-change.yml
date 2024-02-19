@@ -10,6 +10,13 @@ on:
 
 jobs:
   build-latest:
+    strategy:
+      matrix:
+        include:
+          - tag: latest
+            dockerfile: Dockerfile
+          - tag: alpine
+            dockerfile: Dockerfile.alpine
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,7 +37,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: go-build-cache
-          key: ${{ runner.os }}-go-build-cache
+          key: ${{ runner.os }}-go-build-cache-${{ matrix.tag }}
       - name: inject go-build-cache into docker
         uses: reproducible-containers/buildkit-cache-dance@v2
         with:
@@ -41,8 +48,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           context: .
+          file: ${{ matrix.dockerfile }}
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ env.REGISTRY }}/${{ github.repository }}:alpine
+          tags: ${{ env.REGISTRY }}/${{ github.repository }}:${{ matrix.tag }}
           labels: ${{ steps.meta.outputs.labels }}
 
